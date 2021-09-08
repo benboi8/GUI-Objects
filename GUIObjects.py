@@ -180,15 +180,16 @@ def DrawRoundedRect(surface, colors, rect, roundness=5, width=1, activeCorners={
 		pg.draw.aaline(surface, colors[1], (x+roundness, y+h-i), (x+w-roundness, y+h-i))
 
 
-def Rescale(newScale):
+def Rescale(newScale, rescaleScreen=True):
 	global width, height, screen, sf
 	sf = newScale
 
-	width, height = 640, 360
-	if sf == 3:
-		screen = pg.display.set_mode((width * sf, height * sf), pg.FULLSCREEN)
-	else:
-		screen = pg.display.set_mode((width * sf, height * sf))
+	if rescaleScreen:
+		width, height = 640, 360
+		if sf == 3:
+			screen = pg.display.set_mode((width * sf, height * sf), pg.FULLSCREEN)
+		else:
+			screen = pg.display.set_mode((width * sf, height * sf))
 
 	for box in allBoxs:
 		box.Rescale()
@@ -295,6 +296,8 @@ class Box:
 		self.backgroundColor = colors[0]
 		self.foregroundColor = colors[1]
 
+		self.colors = colors
+
 		self.name = name
 		self.drawBorder = drawData.get("drawBorder", True)
 		self.ogBorderWidth = drawData.get("borderWidth", 1)
@@ -384,8 +387,11 @@ class ImageFrame(Box):
 			self.image = None
 
 	def CreateScaledAssetsFolder(self):
-		if not os.path.isdir("assets/scaledAssets/"):
-			os.mkdir("assets/scaledAssets")
+		try:
+			if not os.path.isdir("assets/scaledAssets/"):
+				os.mkdir("assets/scaledAssets")
+		except:
+			pass
 
 	def UpdateImage(self, imageData):
 		self.imageName = imageData.get("filePath", None)
@@ -563,6 +569,8 @@ class TextInputBox(Label):
 		self.nonAllowedKeys = set()
 		self.allowedKeys = set()
 
+		self.pointer = len(self.text)
+
 		self.GetKeys()
 
 		if type(self.header) == str:
@@ -637,6 +645,14 @@ class TextInputBox(Label):
 				self.active = False
 				self.foregroundColor = self.inactiveColor
 
+			if event.key == pg.K_RIGHT:
+				self.pointer = min(len(self.text), self.pointer + 1)
+			if event.key == pg.K_LEFT:
+				if not self.replaceSplashText:
+					self.pointer = max(len(self.splashText), self.pointer - 1)
+				else:
+					self.pointer = max(0, self.pointer - 1)
+
 		if self.active:
 			self.HandleKeyboard(event)
 
@@ -650,9 +666,14 @@ class TextInputBox(Label):
 			if event.type == pg.KEYDOWN:
 				if event.key == pg.K_BACKSPACE:
 					if textLength != 0 and self.text != self.splashText:
-						self.text = self.text[:-1]
+						self.text = self.text[: self.pointer - 1] + self.text[self.pointer :]
+						self.pointer = max(len(self.splashText) + 1, self.pointer - 1)
+				elif event.key == pg.K_DELETE:
+					if textLength != 0 and self.text != self.splashText:
+						self.text = self.text[: self.pointer] + self.text[self.pointer + 1:]
 				else:
-					self.FilterText(event.unicode)
+					if event.key != pg.K_LEFT and event.key != pg.K_RIGHT:
+						self.FilterText(event.unicode)
 
 				if self.text == "":
 					self.text = self.splashText
@@ -673,18 +694,38 @@ class TextInputBox(Label):
 
 			if len(self.nonAllowedKeys) == 0:
 				if len(self.allowedKeys) == 0:
-					self.text += key
+					if self.pointer == len(self.text):
+						self.text += key
+					else:
+						self.text = self.text[: self.pointer] + key + self.text[self.pointer:]
+					self.pointer = min(len(self.text), self.pointer + 1)
+
 				else:
 					if key in self.allowedKeys:
-						self.text += key
+						if self.pointer == len(self.text):
+							self.text += key
+						else:
+							self.text = self.text[: self.pointer] + key + self.text[self.pointer :]
+						self.pointer = min(len(self.text), self.pointer + 1)
+
 			else:
 				if len(self.allowedKeys) == 0:
 					if key not in self.nonAllowedKeys:
 						if key in self.allowedKeys:
-							self.text += key
+							if self.pointer == len(self.text):
+								self.text += key
+							else:
+								self.text = self.text[: self.pointer] + key + self.text[self.pointer :]
+							self.pointer = min(len(self.text), self.pointer + 1)
+
 				else:
 					if key not in self.nonAllowedKeys:
-						self.text += key
+						if self.pointer == len(self.text):
+							self.text += key
+						else:
+							self.text = self.text[: self.pointer] + key + self.text[self.pointer :]
+						self.pointer = min(len(self.text), self.pointer + 1)
+
 
 	def Draw(self):
 		self.RescaleText()
@@ -705,7 +746,7 @@ class TextInputBox(Label):
 		if self.drawText:
 			if self.active:
 				if dt.datetime.now().microsecond % 1000000 > 500000:
-					pg.draw.rect(self.surface, self.textColor, (self.textRect.x + self.textSurface.get_width() + 1*sf, self.textRect.y, 1*sf, self.textSurface.get_height()))
+					pg.draw.rect(self.surface, self.textColor, (self.textRect.x + (self.textSurface.get_width() / max(1, len(self.text)) * self.pointer), self.textRect.y, 1*sf, self.textSurface.get_height()))
 			self.surface.blit(self.textSurface, self.textRect)
 
 			if type(self.header) == str:
@@ -816,16 +857,16 @@ class Slider(Label):
 			drawData = self.drawData
 			drawData["isFilled"] = True
 			if self.roundedCorners:
-				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth + 1, rect[1] + self.borderWidth + 1, self.sliderSize[0] - (self.borderWidth+1)*2, self.sliderSize[1] - (self.borderWidth+1)*2), colors, "", font, True, textData, drawData, imageData, lists)
+				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth + 1, rect[1] + self.borderWidth + 1, self.sliderSize[0] - (self.borderWidth+1)*2, self.sliderSize[1] - (self.borderWidth+1)*2), colors, "", font, True, textData, drawData, imageData)
 			else:
-				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth, rect[1] + self.borderWidth, self.sliderSize[0] - self.borderWidth*2, self.sliderSize[1] - self.borderWidth*2), colors, "", font, True, textData, drawData, imageData, lists)
+				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth, rect[1] + self.borderWidth, self.sliderSize[0] - self.borderWidth*2, self.sliderSize[1] - self.borderWidth*2), colors, "", font, True, textData, drawData, imageData)
 		else:
 			drawData = self.drawData
 			drawData["isFilled"] = True
 			if self.roundedCorners:
-				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth + 1, rect[1] + self.borderWidth + 1, self.sliderSize[0] - (self.borderWidth+1)*2, self.sliderSize[1] - (self.borderWidth+1)*2), colors, "", font, True, textData, drawData, imageData, lists)
+				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth + 1, rect[1] + self.borderWidth + 1, self.sliderSize[0] - (self.borderWidth+1)*2, self.sliderSize[1] - (self.borderWidth+1)*2), colors, "", font, True, textData, drawData, imageData)
 			else:
-				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth, rect[1] + self.borderWidth, self.sliderSize[0] - self.borderWidth*2, self.sliderSize[1] - self.borderWidth*2), colors, "", font, True, textData, drawData, imageData, lists)
+				self.sliderObj = Button(self.surface, "", (rect[0] + self.borderWidth, rect[1] + self.borderWidth, self.sliderSize[0] - self.borderWidth*2, self.sliderSize[1] - self.borderWidth*2), colors, "", font, True, textData, drawData, imageData)
 
 	def Rescale(self):
 		self.rect = pg.Rect(self.ogRect.x * sf, self.ogRect.y * sf, self.ogRect.w * sf, self.ogRect.h * sf)
@@ -1013,7 +1054,6 @@ class Switch(Button):
 			self.optionsFont = pg.font.Font(self.optionsFontName, self.optionsFontSize)
 		except:
 			self.optionsFont = pg.font.SysFont(self.optionsFontName, self.optionsFontSize)
-
 
 	def Draw(self):
 		self.SwapColors(self.active)
@@ -1379,7 +1419,41 @@ def DrawGui():
 		if gameState in dropDown.activeSurface or dropDown.activeSurface == "all":
 			dropDown.Draw()
 
-	pg.display.update()
+	# pg.display.update()
+
+
+def HandleGUI(event):
+	for label in allLabels:
+		if gameState in label.activeSurface or label.activeSurface == "all":
+			label.HandleEvent(event)
+
+	for button in allButtons:
+		if gameState in button.activeSurface or button.activeSurface == "all":
+			button.HandleEvent(event)
+
+	for textInputBox in allTextBoxs:
+		if gameState in textInputBox.activeSurface or textInputBox.activeSurface == "all":
+			textInputBox.HandleEvent(event)
+
+	for slider in allSliders:
+		if gameState in slider.activeSurface or slider.activeSurface == "all":
+			slider.HandleEvent(event)
+
+	for scrollBar in allScrollbars:
+		if gameState in scrollBar.activeSurface or scrollBar.activeSurface == "all":
+			scrollBar.HandleEvent(event)
+
+	for switch in allSwitchs:
+		if gameState in switch.activeSurface or switch.activeSurface == "all":
+			switch.HandleEvent(event)
+
+	for button in allMultiButtons:
+		if gameState in button.activeSurface or button.activeSurface == "all":
+			button.HandleEvent(event)
+
+	for dropDown in allDropDowns:
+		if gameState in dropDown.activeSurface or dropDown.activeSurface == "all":
+			dropDown.HandleEvent(event)
 
 
 def ButtonPress():
@@ -1406,7 +1480,7 @@ if __name__ == "__main__":
 		Box(screen, "boxDemo", (10, 10, 40, 40), (lightBlack, darkWhite), drawData={"roundedCorners": True, "roundness": 15, "borderWidth": 2})
 		ImageFrame(screen, "imageFrameDemo", (60, 10, 40, 40), (lightBlack, darkWhite), drawData={"borderWidth": 2}, imageData={"filePath": "imageDemo.jpg", "size": (40, 40)})
 		Label(screen, "labelDemo", (110, 10, 40, 40), (lightBlack, darkWhite), "Label\ndemo", ("arial", 10, white), drawData={"borderWidth": 2}, textData={"alignText": "center-top", "multiline": True})
-		TextInputBox(screen, "texInputBoxDemo", (160, 10, 100, 40), (lightBlack, gray, white), ("arial", 10, white), drawData={"borderWidth": 2, "replaceSplashText": False}, textData={"alignText": "left"}, inputData={"charLimit": 8, "splashText": "PIN: ", "allowedKeysList": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]})
+		TextInputBox(screen, "texInputBoxDemo", (160, 10, 100, 20), (lightBlack, gray, white), ("arial", 10, white), drawData={"borderWidth": 2, "replaceSplashText": False}, textData={"alignText": "left"}, inputData={"charLimit": 11, "splashText": "PIN: "})
 		Button(screen, "buttonDemo", (270, 10, 40, 40), (lightBlack, gray, white), "Button", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 15})
 		Slider(screen, "sliderDemo", (320, 10, 150, 40), (lightBlack, gray, white), "", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 10, "moveText": True, "sliderSize": (50, 38)})
 		Switch(screen, "switchDemo", (480, 50, 130, 40), (lightBlack, darkWhite, darkWhite), "Switch", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 15}, textData={"optionsText": ["option 1", "option 2"], "optionsFont": ("arial", 10), "optionsFontColor": [lightRed, lightBlue]})
@@ -1430,37 +1504,7 @@ if __name__ == "__main__":
 				if pg.key.get_pressed()[pg.K_3] and pg.key.get_pressed()[pg.K_LCTRL]:
 					Rescale(3)
 
-			for label in allLabels:
-				if gameState in label.activeSurface or label.activeSurface == "all":
-					label.HandleEvent(event)
-
-			for button in allButtons:
-				if gameState in button.activeSurface or button.activeSurface == "all":
-					button.HandleEvent(event)
-
-			for textInputBox in allTextBoxs:
-				if gameState in textInputBox.activeSurface or textInputBox.activeSurface == "all":
-					textInputBox.HandleEvent(event)
-
-			for slider in allSliders:
-				if gameState in slider.activeSurface or slider.activeSurface == "all":
-					slider.HandleEvent(event)
-
-			for scrollBar in allScrollbars:
-				if gameState in scrollBar.activeSurface or scrollBar.activeSurface == "all":
-					scrollBar.HandleEvent(event)
-
-			for switch in allSwitchs:
-				if gameState in switch.activeSurface or switch.activeSurface == "all":
-					switch.HandleEvent(event)
-
-			for button in allMultiButtons:
-				if gameState in button.activeSurface or button.activeSurface == "all":
-					button.HandleEvent(event)
-
-			for dropDown in allDropDowns:
-				if gameState in dropDown.activeSurface or dropDown.activeSurface == "all":
-					dropDown.HandleEvent(event)
+			HandleGUI(event)
 
 		ButtonPress()
 		DrawLoop()
