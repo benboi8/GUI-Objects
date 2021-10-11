@@ -1,5 +1,6 @@
 # add file handler object
 # add camera object
+# fix text input box backspace with replace splash text off
 
 import pygame as pg
 from pygame import gfxdraw
