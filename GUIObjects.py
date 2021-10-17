@@ -1,11 +1,14 @@
 # add file handler object
 # add camera object
 # fix text input box backspace with replace splash text off
+# add color class
+# add vector classes
 
 import pygame as pg
 from pygame import gfxdraw
 from imageScaling import *
 import math
+from math import *
 import random
 import json
 import datetime as dt
@@ -292,6 +295,9 @@ def AlignText(rect, textSurface, alignment="center", width=2):
 	return pg.Rect(x, y, w, h)
 
 
+# ---- test all functions ----
+
+
 class Wait:
 	def __init__(self, duration):
 		self.duration = duration
@@ -406,6 +412,163 @@ class Sequence:
 
 			if self.autoDestroy:
 				self.Kill()
+
+
+class Vec2:
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+		self.length = None
+		self.direction = None
+
+	def ToString(self):
+		return f"x:{self.x} y:{self.y}"
+
+	def Set(self, x, y):
+		self.x = x
+		self.y = y
+
+	def SetX(self, x):
+		self.x = x
+
+	def SetY(self, y):
+		self.y = y
+
+	def Copy(self):
+		try:
+			if type(self) == Vec2:
+				return Vec2(self.x, self.y)
+			elif type(self) == Vec3:
+				return Vec3(self.x, self.y, self.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def Add(self, vec):
+		try:
+			if type(self) == Vec2:
+				return Vec2(self.x + vec.x, self.y + vec.y)
+			elif type(self) == Vec3:
+				return Vec3(self.x + vec.x, self.y + vec.y, self.z + vec.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def Sub(self, vec):
+		try:
+			if type(self) == Vec2:
+				return Vec2(self.x - vec.x, self.y - vec.y)
+			elif type(self) == Vec3:
+				return Vec3(self.x - vec.x, self.y - vec.y, self.z - vec.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def Multiply(self, vec):
+		try:
+			if type(self) == Vec2:
+				return Vec2(self.x * vec.x, self.y * vec.y)
+			elif type(self) == Vec3:
+				return Vec3(self.x * vec.x, self.y * vec.y, self.z * vec.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def Divide(self, vec):
+		try:
+			if type(self) == Vec2:
+				return Vec2(self.x / vec.x, self.y / vec.y)
+			elif type(self) == Vec3:
+				return Vec3(self.x / vec.x, self.y / vec.y, self.z / vec.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def IntDivide(self, vec):
+		try:
+			if type(self) == Vec2:
+				return Vec2(self.x // vec.x, self.y // vec.y)
+			elif type(self) == Vec3:
+				return Vec3(self.x // vec.x, self.y // vec.y, self.z // vec.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def Magnitude(self):
+		return sqrt(self.MagnitudeSquared())
+
+	def MagnitudeSquared(self):
+		try:
+			if type(self) == Vec2:
+				return self.x * self.x + self.y * self.y
+			elif type(self) == Vec3:
+				return self.x * self.x + self.y * self.y + self.z * self.z
+		except AttributeError:
+			print("AttributeError")
+
+	def Dot(self, vec):
+		try:
+			if type(self) == Vec2:
+				return self.x * vec.x + self.y * vec.y
+			elif type(self) == Vec3:
+				return self.x * vec.x + self.y * vec.y + self.z * vec.z
+		except AttributeError:
+			print("AttributeError")
+
+	def Cross(self, vec):
+		try:
+			if type(self) == Vec2:
+				return Vec2(self.x * vec.x - self.y * vec.y)
+			elif type(self) == Vec3:
+				return Vec3(self.x * vec.x - self.y * vec.y - self.z * vec.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def GetEuclideanDistance(self, vec):
+		try:
+			if type(self) == Vec2:
+				return sqrt((self.x - vec.x) ** 2 + (self.y - vec.y) ** 2)
+			elif type(self) == Vec3:
+				return sqrt((self.x - vec.x) ** 2 + (self.y - vec.y) ** 2, (self.z - vec.z) ** 2)
+		except AttributeError:
+			print("AttributeError")
+
+	def GetTaxicabDistance(self, vec):
+		try:
+			if type(self) == Vec2:
+				return abs(self.x - vec.x) + abs(self.y - vec.y)
+			elif type(self) == Vec3:
+				return abs(self.x - vec.x) + abs(self.y - vec.y) + abs(self.z - vec.z)
+		except AttributeError:
+			print("AttributeError")
+
+	def Normalize(self):
+		length = self.Magnitude()
+		if length != 0:
+			try:
+				if type(self) == Vec2:
+					return self.Multiply(Vec2(1 / length, 1 / length))
+				elif type(self) == Vec3:
+					return self.Multiply(Vec3(1 / length, 1 / length, 1 / length))
+			except AttributeError:
+				print("AttributeError")
+
+
+class Vec3(Vec2):
+	def __init__(self, x, y, z):
+		super().__init__(x, y)
+		self.z = z
+
+	def SetZ(self, z):
+		self.z = z
+
+	def ToString(self):
+		return f"x:{self.x} y:{self.y} z:{self.z}"
+
+
+class ColorManager:
+	def RandomColor(self, rLimit=(0, 255), gLimit=(0, 255), bLimit=(0, 255)):
+		return (random.randint(rLimit[0], rLimit[1]), random.randint(gLimit[0], gLimit[1]), random.randint(bLimit[0], bLimit[1]))
+
+	def Inverse(self, color):
+		return (255 - color[0], 255 - color[1], 255 - color[2])
+
+
+# ----------------------------
 
 
 class Timer:
@@ -1772,61 +1935,72 @@ def UpdateSequences():
 
 
 timer = Timer()
+colorSystem = ColorManager()
+
 if __name__ == "__main__":
-	Rescale(sf)
-	programState = "Load character menu"
-	options = []
-	for i in range(0, 50):
-		options.append(str(i))
 
-	def DrawLoop():
-		screen.fill(darkGray)
-		DrawGui()
-		pg.display.update()
+	v1 = Vec2(0, 0)
+	v2 = Vec2(10, 5)
 
-	def CreateAllObjects():
-		Box(screen, "boxDemo", (10, 10, 40, 40), (lightBlack, darkWhite), drawData={"roundedCorners": True, "roundness": 15, "borderWidth": 2})
-		ImageFrame(screen, "imageFrameDemo", (60, 10, 40, 40), (lightBlack, darkWhite), drawData={"borderWidth": 2}, imageData={"filePath": "imageDemo.jpg", "size": (40, 40)})
-		Label(screen, "labelDemo", (110, 10, 40, 40), (lightBlack, darkWhite), "Label\ndemo", ("arial", 10, white), drawData={"borderWidth": 2}, textData={"alignText": "center-top", "multiline": True})
-		TextInputBox(screen, "texInputBoxDemo", (160, 10, 100, 20), (lightBlack, gray, white), ("arial", 10, white), drawData={"borderWidth": 2, "replaceSplashText": False}, textData={"alignText": "left"}, inputData={"charLimit": 11, "splashText": "PIN: "})
-		Button(screen, "buttonDemo", (270, 10, 40, 40), (lightBlack, gray, white), "Button", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 15})
-		Slider(screen, "sliderDemo", (320, 10, 150, 40), (lightBlack, gray, white), "", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 10, "moveText": True, "sliderSize": (50, 38)})
-		Switch(screen, "switchDemo", (480, 50, 130, 40), (lightBlack, darkWhite, darkWhite), "Switch", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 15}, textData={"optionsText": ["option 1", "option 2"], "optionsFont": ("arial", 10), "optionsFontColor": [lightRed, lightBlue]})
-		MultiSelectButton(screen, "MultiSelectButtonDemo", (10, 60, 80, 100), (lightBlack, darkWhite, lightRed), "MultiSelectButton", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 12}, textData={"alignText": "center-top"}, inputData={"optionNames": ["option 1", "option 2", "option 3"], "optionsSize": (80, 20)})
-		DropDownMenu(screen, "dropDownMenuDemo", (110, 60, 80, 100), (lightBlack, darkWhite, lightRed), "DropDownMenu", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 12, "inactiveY": 15}, textData={"alignText": "center-top"}, inputData={"optionNames": ["option 1", "option 2", "option 3"], "optionsSize": (70, 20)})
-		MessageBox(screen, "messageDemo", (200, 100, 200, 90), (lightBlack, darkWhite, lightRed), "Message title", "Message demo text", ("arial", 10, white), drawData={"borderWidth": 2}, textData={"alignText": "center-top"}, inputData={"messageDraw": {"borderWidth": 1}, "messageText": {"alignText": "center-top"}, "confirmDraw": {"borderWidth": 1}, "confirmText": {"alignText": "center-top"}, "cancelDraw": {"borderWidth": 1}, "cancelText": {"alignText": "center-top"}})
+	def Main():
+		global running
+		Rescale(sf)
+		programState = "Load character menu"
+		options = []
+		for i in range(0, 50):
+			options.append(str(i))
 
-	CreateAllObjects()
+		def DrawLoop():
+			screen.fill(darkGray)
+			DrawGui()
+			pg.display.update()
 
-	s = Sequence(1, Func(print, "one"), Func(print, "two"), 1, Func(print, "three"), loop=True)
+		def CreateAllObjects():
+			Box(screen, "boxDemo", (10, 10, 40, 40), (lightBlack, darkWhite), drawData={"roundedCorners": True, "roundness": 15, "borderWidth": 2})
+			ImageFrame(screen, "imageFrameDemo", (60, 10, 40, 40), (lightBlack, darkWhite), drawData={"borderWidth": 2}, imageData={"filePath": "imageDemo.jpg", "size": (40, 40)})
+			Label(screen, "labelDemo", (110, 10, 40, 40), (lightBlack, darkWhite), "Label\ndemo", ("arial", 10, white), drawData={"borderWidth": 2}, textData={"alignText": "center-top", "multiline": True})
+			TextInputBox(screen, "texInputBoxDemo", (160, 10, 100, 20), (lightBlack, gray, white), ("arial", 10, white), drawData={"borderWidth": 2, "replaceSplashText": False}, textData={"alignText": "left"}, inputData={"charLimit": 11, "splashText": "PIN: "})
+			Button(screen, "buttonDemo", (270, 10, 40, 40), (lightBlack, gray, white), "Button", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 15})
+			Slider(screen, "sliderDemo", (320, 10, 150, 40), (lightBlack, gray, white), "", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 10, "moveText": True, "sliderSize": (50, 38)})
+			Switch(screen, "switchDemo", (480, 50, 130, 40), (lightBlack, darkWhite, darkWhite), "Switch", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 15}, textData={"optionsText": ["option 1", "option 2"], "optionsFont": ("arial", 10), "optionsFontColor": [lightRed, lightBlue]})
+			MultiSelectButton(screen, "MultiSelectButtonDemo", (10, 60, 80, 100), (lightBlack, darkWhite, lightRed), "MultiSelectButton", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 12}, textData={"alignText": "center-top"}, inputData={"optionNames": ["option 1", "option 2", "option 3"], "optionsSize": (80, 20)})
+			DropDownMenu(screen, "dropDownMenuDemo", (110, 60, 80, 100), (lightBlack, darkWhite, lightRed), "DropDownMenu", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 12, "inactiveY": 15}, textData={"alignText": "center-top"}, inputData={"optionNames": ["option 1", "option 2", "option 3"], "optionsSize": (70, 20)})
+			MessageBox(screen, "messageDemo", (200, 100, 200, 90), (lightBlack, darkWhite, lightRed), "Message title", "Message demo text", ("arial", 10, white), drawData={"borderWidth": 2}, textData={"alignText": "center-top"}, inputData={"messageDraw": {"borderWidth": 1}, "messageText": {"alignText": "center-top"}, "confirmDraw": {"borderWidth": 1}, "confirmText": {"alignText": "center-top"}, "cancelDraw": {"borderWidth": 1}, "cancelText": {"alignText": "center-top"}})
 
-	while running:
-		for event in pg.event.get():
-			if event.type == pg.QUIT:
-				running = False
-			if event.type == pg.KEYDOWN:
-				if event.key == pg.K_ESCAPE:
+		# CreateAllObjects()
+
+		s = Sequence(1, Func(print, "one"), Func(print, "two"), 1, Func(print, "three"), loop=True)
+
+		while running:
+			for event in pg.event.get():
+				if event.type == pg.QUIT:
 					running = False
+				if event.type == pg.KEYDOWN:
+					if event.key == pg.K_ESCAPE:
+						running = False
 
-				if pg.key.get_pressed()[pg.K_1] and pg.key.get_pressed()[pg.K_LCTRL]:
-					Rescale(1)
-				if pg.key.get_pressed()[pg.K_2] and pg.key.get_pressed()[pg.K_LCTRL]:
-					Rescale(2)
-				if pg.key.get_pressed()[pg.K_3] and pg.key.get_pressed()[pg.K_LCTRL]:
-					Rescale(3)
+					if pg.key.get_pressed()[pg.K_1] and pg.key.get_pressed()[pg.K_LCTRL]:
+						Rescale(1)
+					if pg.key.get_pressed()[pg.K_2] and pg.key.get_pressed()[pg.K_LCTRL]:
+						Rescale(2)
+					if pg.key.get_pressed()[pg.K_3] and pg.key.get_pressed()[pg.K_LCTRL]:
+						Rescale(3)
 
 
-				if event.key == pg.K_p:
-					s.Pause()
-				if event.key == pg.K_r:
-					s.Resume()
-				if event.key == pg.K_s:
-					s.Start()
-				if event.key == pg.K_f:
-					s.Stop()
+					if event.key == pg.K_p:
+						s.Pause()
+					if event.key == pg.K_r:
+						s.Resume()
+					if event.key == pg.K_s:
+						s.Start()
+					if event.key == pg.K_f:
+						s.Stop()
 
-			HandleGui(event)
+				HandleGui(event)
 
-		ButtonPress()
-		UpdateSequences()
-		DrawLoop()
+			ButtonPress()
+			UpdateSequences()
+			DrawLoop()
+
+
+	Main()
