@@ -35,6 +35,8 @@ allMultiButtons = []
 allDropDowns = []
 allMessageBoxs = []
 
+sequences = []
+
 black = (0, 0, 0)
 white = (255, 255, 255)
 lightGray = (205, 205, 205)
@@ -288,6 +290,195 @@ def AlignText(rect, textSurface, alignment="center", width=2):
 		y += h - textSurface.get_height() - ((width + 2) * sf)
 
 	return pg.Rect(x, y, w, h)
+
+
+class Wait:
+	def __init__(self, duration):
+		self.duration = duration
+
+
+class Func:
+	def __init__(self, func, *args, **kwargs):
+		self.func = func
+		self.args = args
+		self.kwargs = kwargs
+		self.delay = 0
+		self.finished = False
+
+	def __call__(self):
+		self.finished = True
+		return self.func(*self.args, **self.kwargs)
+
+
+class Sequence:
+	defaultTimeStep = None
+
+	def __init__(self, *args, **kwargs):
+		self.args = list(args)
+		self.t = 0
+		self.timeStep = Sequence.defaultTimeStep
+		self.duration = 0
+		self.funcs = []
+		self.started = False
+		self.paused = True
+		self.loop = False
+		self.autoDestroy = True
+
+		for key, value in kwargs.items():
+			setattr(self, key, value)
+
+		self.Generate()
+		sequences.append(self)
+
+	def Generate(self):
+		self.funcs = []
+
+		for arg in self.args:
+			if isinstance(arg, Wait):
+				self.duration += arg.duration
+			elif isinstance(arg, (int, float)):
+				self.duration += arg
+
+			elif isinstance(arg, Func):
+				arg.delay = self.duration
+				self.funcs.append(arg)
+
+	def append(self, arg):
+		self.args.append(arg)
+
+		if isinstance(arg, Wait):
+			self.duration += arg.duration
+		elif isinstance(arg, (int, float)):
+			self.duration += arg
+		elif isinstance(arg, Func):
+			arg.delay = self.duration
+			self.funcs.append(arg)
+
+	def Start(self):
+		self.started = True
+		for f in self.funcs:
+			f.finished = False
+
+		self.t = 0
+		self.paused = False
+		self.Update()
+
+	def Pause(self):
+		self.paused = True
+
+	def Resume(self):
+		self.paused = False
+
+	def Finish(self):
+		self.t = self.duration
+		self.paused = False
+
+		self.Kill()
+
+	def Kill(self):
+		if self in sequences:
+			sequences.remove(self)
+			del self
+
+	def Update(self):
+		if not self.started:
+			return
+
+		if self.paused:
+			return
+
+		if self.timeStep is None:
+			self.t += dt.datetime.now().second
+		else:
+			self.t += self.timeStep
+
+		for f in self.funcs:
+			if not f.finished and f.delay <= self.t:
+				f()
+
+		if self.t >= self.duration:
+			if self.loop:
+				for f in self.funcs:
+					f.finished = False
+
+				self.t = 0
+				return
+
+			if self.autoDestroy:
+				self.Kill()
+
+
+class Timer:
+	def __init__(self):
+		self.startTime = dt.datetime.now()
+
+	def Start(self):
+		self.startTime = dt.datetime.now()
+
+	def Stop(self, log=None, extraData={}):
+		self.endTime = dt.datetime.now()
+		difference = self.endTime - self.startTime
+
+		print(f"Start time: {self.startTime}, end time: {self.endTime}, difference: {difference}")
+		for key in extraData:
+			print(f"{key}: {extraData[key]}")
+
+		self.LogResults(log, extraData)
+
+	def LogResults(self, log=None, extraData={}):
+		if log != None:
+			try:
+				with open(log, "x") as file:
+					file.close()
+			except:
+				pass
+
+			if ".txt" in log:
+				with open(log, "a") as file:
+					file.write(f"Start time: {self.startTime}\n")
+					file.write(f"End time: {self.endTime}\n")
+					file.write(f"Difference: {difference}\n")
+
+					for key in extraData:
+						file.write(f"{key}: {extraData[key]}\n")
+
+					file.write("\n")
+					file.close()
+
+			elif ".json" in log:
+				try:
+					with open(log, "r") as file:
+						data = json.load(file)
+
+						for key in data:
+							pass
+
+						key = int(key) + 1
+
+						file.close()
+
+				except json.decoder.JSONDecodeError:
+					data = {}
+					key = 0
+
+				data[str(key)] = {}
+				data[str(key)]["startTime"] = self.startTime.strftime("%Y-%m-%d %H:%M:%S:%f")
+				data[str(key)]["endTime"] = self.endTime.strftime("%Y-%m-%d %H:%M:%S:%f")
+				data[str(key)]["difference"] = f"{difference.seconds}.{difference.microseconds}"
+
+				data[str(key)]["extraData"] = extraData
+
+				with open(log, "w") as file:
+					json.dump(data, fp=file, indent=2)
+
+					file.close()
+
+	def RecordTime(self, function, log=None, extraData={}, *args, **kwargs):
+		self.Start()
+
+		Func(function, *args, **kwargs)()
+
+		self.Stop(log=log, extraData=extraData)
 
 
 class Box:
@@ -1570,6 +1761,12 @@ def ButtonPress():
 			buttonData[0].OnRelease()
 
 
+def UpdateSequences():
+	for s in sequences:
+		s.Update()
+
+
+timer = Timer()
 if __name__ == "__main__":
 	Rescale(sf)
 	programState = "Load character menu"
@@ -1596,6 +1793,8 @@ if __name__ == "__main__":
 
 	CreateAllObjects()
 
+	s = Sequence(1, Func(print, "one"), Func(print, "two"), 1, Func(print, "three"), loop=True)
+
 	while running:
 		for event in pg.event.get():
 			if event.type == pg.QUIT:
@@ -1611,7 +1810,18 @@ if __name__ == "__main__":
 				if pg.key.get_pressed()[pg.K_3] and pg.key.get_pressed()[pg.K_LCTRL]:
 					Rescale(3)
 
+
+				if event.key == pg.K_p:
+					s.Pause()
+				if event.key == pg.K_r:
+					s.Resume()
+				if event.key == pg.K_s:
+					s.Start()
+				if event.key == pg.K_f:
+					s.Finish()
+
 			HandleGui(event)
 
 		ButtonPress()
+		UpdateSequences()
 		DrawLoop()
