@@ -296,7 +296,7 @@ class Wait:
 	def __init__(self, duration):
 		self.duration = duration
 
-
+# creates an instance of a function that can be used in a sequence or as an argument in another function e.g. a button being clicked
 class Func:
 	def __init__(self, func, *args, **kwargs):
 		self.func = func
@@ -309,7 +309,7 @@ class Func:
 		self.finished = True
 		return self.func(*self.args, **self.kwargs)
 
-
+# used to chain multiple 'Func' together
 class Sequence:
 	defaultTimeStep = None
 
