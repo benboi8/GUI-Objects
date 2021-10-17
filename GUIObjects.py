@@ -369,7 +369,7 @@ class Sequence:
 	def Resume(self):
 		self.paused = False
 
-	def Finish(self):
+	def Stop(self):
 		self.t = self.duration
 		self.paused = False
 
@@ -473,10 +473,15 @@ class Timer:
 
 					file.close()
 
-	def RecordTime(self, function, log=None, extraData={}, *args, **kwargs):
+	# arg 'function' takes a 'Func' or a 'sequence'
+	def Record(self, function, log=None, extraData={}, *args, **kwargs):
 		self.Start()
 
-		Func(function, *args, **kwargs)()
+		if isinstance(function, Func):
+			Func(function, *args, **kwargs)()
+		elif isinstance(function, Sequence):
+			function.Start()
+			function.Stop()
 
 		self.Stop(log=log, extraData=extraData)
 
@@ -1818,7 +1823,7 @@ if __name__ == "__main__":
 				if event.key == pg.K_s:
 					s.Start()
 				if event.key == pg.K_f:
-					s.Finish()
+					s.Stop()
 
 			HandleGui(event)
 
