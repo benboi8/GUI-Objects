@@ -1,8 +1,7 @@
 # add file handler object
 # add camera object
 # fix text input box backspace with replace splash text off
-# add color class
-# add vector classes
+# update classes to work with funcs and sequences
 
 import pygame as pg
 from pygame import gfxdraw
@@ -1967,7 +1966,7 @@ if __name__ == "__main__":
 			DropDownMenu(screen, "dropDownMenuDemo", (110, 60, 80, 100), (lightBlack, darkWhite, lightRed), "DropDownMenu", ("arial", 10, white), drawData={"borderWidth": 2, "roundedCorners": True, "roundness": 12, "inactiveY": 15}, textData={"alignText": "center-top"}, inputData={"optionNames": ["option 1", "option 2", "option 3"], "optionsSize": (70, 20)})
 			MessageBox(screen, "messageDemo", (200, 100, 200, 90), (lightBlack, darkWhite, lightRed), "Message title", "Message demo text", ("arial", 10, white), drawData={"borderWidth": 2}, textData={"alignText": "center-top"}, inputData={"messageDraw": {"borderWidth": 1}, "messageText": {"alignText": "center-top"}, "confirmDraw": {"borderWidth": 1}, "confirmText": {"alignText": "center-top"}, "cancelDraw": {"borderWidth": 1}, "cancelText": {"alignText": "center-top"}})
 
-		# CreateAllObjects()
+		CreateAllObjects()
 
 		s = Sequence(1, Func(print, "one"), Func(print, "two"), 1, Func(print, "three"), loop=True)
 
